@@ -26,7 +26,6 @@ import kotlinx.coroutines.launch
 class AddProductFragment : Fragment() {
 
     private val viewModel: AdminViewModel by viewModels()
-
     private lateinit var binding: FragmentAddProductBinding
     private val imageUris: ArrayList<Uri> = arrayListOf()
     val selectedImage =
@@ -34,7 +33,6 @@ class AddProductFragment : Fragment() {
             val fiveImages = listOfUri.take(5)
             imageUris.clear()
             imageUris.addAll(fiveImages)
-
             binding.rvProductImage.adapter = AdapterSelectedImage(imageUris)
         }
 
@@ -47,13 +45,15 @@ class AddProductFragment : Fragment() {
         setAutoCompleteTextViews()
         onImageSelectClicked()
         onAddButtonClicked()
-
         return binding.root
     }
 
     private fun onAddButtonClicked() {
         binding.btnAddProduct.setOnClickListener {
+            // Vô hiệu hóa nút ngay khi nhấn
+            binding.btnAddProduct.isEnabled = false
             Utils.showDialog(requireContext(), "Uploading images...")
+
             val productTitle = binding.etProductTitle.text.toString()
             val productQuantity = binding.etProductQuantity.text.toString()
             val productUnit = binding.etProductUnit.text.toString()
@@ -69,12 +69,15 @@ class AddProductFragment : Fragment() {
                     hideDialog()
                     showToast(requireContext(), message = "Empty fields are not allowed")
                 }
-
+                // Kích hoạt lại nút nếu kiểm tra thất bại
+                binding.btnAddProduct.isEnabled = true
             } else if (imageUris.isEmpty()) {
                 Utils.apply {
                     hideDialog()
                     showToast(requireContext(), message = "Please upload some image")
                 }
+                // Kích hoạt lại nút nếu không có ảnh
+                binding.btnAddProduct.isEnabled = true
             } else {
                 val product = Product(
                     productTitle = productTitle,
@@ -87,51 +90,67 @@ class AddProductFragment : Fragment() {
                     itemCount = 0,
                     adminUid = Utils.getCurrentUserId(),
                     productRandomId = Utils.getRandomId()
-
                 )
-
                 saveImage(product)
             }
-
         }
     }
 
     private fun saveImage(product: Product) {
         viewModel.saveImageInDB(imageUris)
         lifecycleScope.launch {
-            viewModel.isImageUpload.collect {
-                if (it) {
+            viewModel.isImageUpload.collect { isUploaded ->
+                if (isUploaded == null) return@collect // Bỏ qua trạng thái ban đầu
+                if (isUploaded) {
                     Utils.apply {
                         hideDialog()
-                        showToast(requireContext(), message = "image saved")
+                        showToast(requireContext(), "Images uploaded successfully")
                     }
                     getUrls(product)
+                } else {
+                    Utils.apply {
+                        hideDialog()
+                        showToast(requireContext(), "Failed to upload images")
+                    }
+                    // Kích hoạt lại nút nếu upload thất bại
+                    binding.btnAddProduct.isEnabled = true
                 }
             }
         }
-
     }
 
     private fun getUrls(product: Product) {
         Utils.showDialog(requireContext(), "Publishing product...")
         lifecycleScope.launch {
-            viewModel.downloadedUrls.collect {
-                val urls = it
+            viewModel.downloadedUrls.collect { urls ->
+                if (urls.isEmpty()) return@collect // Bỏ qua trạng thái ban đầu
                 product.productImageUris = urls
                 saveProduct(product)
             }
         }
-
     }
 
     private fun saveProduct(product: Product) {
         viewModel.saveProduct(product)
         lifecycleScope.launch {
-            viewModel.isProductSaved.collect {
-                if (it) {
-                    Utils.hideDialog()
+            viewModel.isProductSaved.collect { isSaved ->
+                if (isSaved == null) return@collect // Bỏ qua trạng thái ban đầu
+                if (isSaved) {
+                    Utils.apply {
+                        hideDialog()
+                        showToast(requireContext(), message = "Your product is live")
+                    }
                     startActivity(Intent(requireActivity(), AdminMainActivity::class.java))
-                    Utils.showToast(requireContext(), message = "Your product is live")
+                    requireActivity().finish()
+                    // Kích hoạt lại nút sau khi thêm thành công
+                    binding.btnAddProduct.isEnabled = true
+                } else {
+                    Utils.apply {
+                        hideDialog()
+                        showToast(requireContext(), "Failed to save product")
+                    }
+                    // Kích hoạt lại nút nếu lưu thất bại
+                    binding.btnAddProduct.isEnabled = true
                 }
             }
         }
@@ -145,10 +164,8 @@ class AddProductFragment : Fragment() {
 
     private fun setAutoCompleteTextViews() {
         val units = ArrayAdapter(requireContext(), R.layout.show_list, Constants.allUnitsOfProducts)
-        val category =
-            ArrayAdapter(requireContext(), R.layout.show_list, Constants.allProductCategory)
-        val productType =
-            ArrayAdapter(requireContext(), R.layout.show_list, Constants.allProductType)
+        val category = ArrayAdapter(requireContext(), R.layout.show_list, Constants.allProductCategory)
+        val productType = ArrayAdapter(requireContext(), R.layout.show_list, Constants.allProductType)
 
         binding.apply {
             etProductUnit.setAdapter(units)
@@ -156,6 +173,7 @@ class AddProductFragment : Fragment() {
             etProductType.setAdapter(productType)
         }
     }
+
     private fun setStatusBarColor() {
         activity?.window?.apply {
             val statusBarColors = ContextCompat.getColor(requireContext(), R.color.yellow)

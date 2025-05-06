@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".auth.SingInFragment">
+    tools:context=".auth.SignInFragment">
 
     <ScrollView
         android:layout_width="match_parent"
@@ -40,14 +40,14 @@
                 android:layout_marginTop="13dp"
                 android:textStyle="bold"
                 android:textSize="22sp"
-                android:text="Delivered in 10 minutes⚡️ " />
+                android:text="Giao hàng nhanh chóng⚡️ " />
 
             <TextView
                 android:id="@+id/textView2"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="Login or Sign Up"
+                android:text="Đăng kí hoặc Đăng nhập"
                 android:textSize="16sp"/>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -68,7 +68,7 @@
                     android:layout_height="wrap_content"
                     android:drawablePadding="10dp"
                     android:drawableStart="@android:drawable/stat_sys_phone_call_forward"
-                    android:hint="Enter the Mobile Number"
+                    android:hint="Nhập số điện thoại của bạn"
                     android:inputType="number"/>
             </com.google.android.material.textfield.TextInputLayout>
 
